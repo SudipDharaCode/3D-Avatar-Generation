@@ -33,3 +33,6 @@ Changes are applied in real-time to the avatar materials.
 Models are loaded asynchronously with GLTFLoader.
 Previously loaded models are cached in gltfCache to improve performance.
 A loading overlay displays while the avatar is being prepared.
+
+
+![Avatar Customizer Screenshot](avatar.png)
