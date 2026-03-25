@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Avatar Customizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+        
+        .viewer-section {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            height: 700px;
+            position: relative;
+        }
+        
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            z-index: 10;
+        }
+        
+        .controls-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .controls-panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        select, input[type="color"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        select:hover, input[type="color"]:hover {
+            border-color: #667eea;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .rotation-controls {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        
+        .rotation-controls p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .info-message {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #1976d2;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-panel {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="viewer-section">
+            <canvas id="canvas"></canvas>
+            <div class="loading" id="loading">Loading Avatar...</div>
+        </div>
+        
+        <div class="controls-panel">
+            <h2>Avatar Customizer</h2>
+            
+            <div class="control-group">
+                <label for="hairstyle">Hairstyle</label>
+                <select id="hairstyle">
+                    <option value="">Select Hairstyle</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="hairScale">Hair Size</label>
+                <input type="range" id="hairScale" min="0.001" max="0.1" step="0.005" value="0.05">
+            </div>
+
+            <div class="control-group">
+                <label for="hairHeight">Hair Height</label>
+                <input type="range" id="hairHeight" min="0.001" max="1.8" step="0.01" value="1.6">
+            </div>
+
+            
+            <div class="control-group">
+                <label for="hairColor">Hair Color</label>
+                <input type="color" id="hairColor" value="#8B4513">
+            </div>
+            
+            <div class="control-group">
+                <label for="skinTone">Skin Tone</label>
+                <input type="color" id="skinTone" value="#F4A460">
+            </div>
+            
+            <div class="control-group">
+                <label for="bodyTone">Body Tone</label>
+                <input type="color" id="bodyTone" value="#E8B4A8">
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-primary" id="resetBtn">Reset</button>
+                <button class="btn-secondary" id="exportBtn">Export</button>
+            </div>
+            
+            <div class="rotation-controls">
+                <p><strong>🖱️ Controls</strong></p>
+                <p>• Drag to rotate</p>
+                <p>• Scroll to zoom</p>
+            </div>
+            
+            <div class="info-message">
+                ℹ️ Real-time preview enabled. All changes reflected instantly.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        // Scene Setup
+        const canvas = document.getElementById('canvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f0f0);
+        scene.fog = new THREE.Fog(0xf0f0f0, 100, 1000);
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        camera.position.set(0, 0, 3);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 5, 5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        // Mouse Controls
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let rotation = { x: 0, y: 0 };
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            rotation.y += deltaX * 0.01;
+            rotation.x += deltaY * 0.01;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            camera.position.z += e.deltaY * 0.001;
+            camera.position.z = Math.max(1.5, Math.min(10, camera.position.z));
+        });
+
+        // Avatar Data
+        let avatarGroup = null;
+        const avatarParts = {};
+        const gltfCache = {};
+
+        const avatarConfig = {
+            base: 'avatar.glb',
+            hairstyles: ['hair1.glb', 'hair2.glb'],
+            hairColor: '#8B4513',
+            skinTone: '#F4A460',
+            bodyTone: '#E8B4A8'
+        };
+
+        // Loader
+        const loader = new THREE.GLTFLoader();
+
+        async function loadModel(path) {
+            return new Promise((resolve, reject) => {
+                if (gltfCache[path]) {
+                    resolve(gltfCache[path]);
+                    return;
+                }
+                loader.load(path, (gltf) => {
+                    gltfCache[path] = gltf;
+                    resolve(gltf);
+                }, undefined, reject);
+            });
+        }
+
+        function applyMaterial(mesh, color) {
+            if (mesh.isMesh) {
+                mesh.material = new THREE.MeshPhongMaterial({
+                    color: new THREE.Color(color),
+                    shininess: 100
+                });
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+            }
+        }
+
+        async function initializeAvatar() {
+            try {
+                // Load base avatar
+                const baseGltf = await loadModel(avatarConfig.base);
+                const baseModel = baseGltf.scene.clone();
+                
+                if (avatarGroup) scene.remove(avatarGroup);
+                avatarGroup = new THREE.Group();
+                scene.add(avatarGroup);
+
+                // Add base avatar
+                baseModel.traverse((node) => {
+                    applyMaterial(node, avatarConfig.skinTone);
+                });
+                avatarGroup.add(baseModel);
+                avatarParts.base = baseModel;
+
+                // Load first hairstyle by default
+                await updateHairstyle(avatarConfig.hairstyles[0]);
+
+                document.getElementById('loading').style.display = 'none';
+                populateHairstyleOptions();
+            } catch (error) {
+                console.error('Error loading avatar:', error);
+                document.getElementById('loading').textContent = 'Error loading avatar. Check file paths.';
+            }
+        }
+
+        async function updateHairstyle(path) {
+            if (avatarParts.hairstyle) avatarGroup.remove(avatarParts.hairstyle);
+
+            const hairGltf = await loadModel(path);
+            const hairModel = hairGltf.scene.clone();
+
+            // Apply hair color
+            hairModel.traverse((node) => {
+                applyMaterial(node, avatarConfig.hairColor);
+            });
+
+            // 🔹 Scale down hair (adjust numbers as needed)
+            hairModel.scale.set(0.1, 0.1, 0.1); // Try smaller values like 0.1 instead of 0.8
+            hairModel.position.set(0, 0.1, 0); // Move hair to align with head (Y = height)
+
+            avatarGroup.add(hairModel);
+            avatarParts.hairstyle = hairModel;
+        }
+
+        function updateColors() {
+            if (avatarParts.base) {
+                avatarParts.base.traverse((node) => {
+                    if (node.isMesh && node.name.toLowerCase().includes('skin')) {
+                        applyMaterial(node, avatarConfig.skinTone);
+                    } else if (node.isMesh && !node.name.toLowerCase().includes('hair')) {
+                        applyMaterial(node, avatarConfig.bodyTone);
+                    }
+                });
+            }
+
+            if (avatarParts.hairstyle) {
+                avatarParts.hairstyle.traverse((node) => {
+                    if (node.isMesh) {
+                        applyMaterial(node, avatarConfig.hairColor);
+                    }
+                });
+            }
+        }
+
+        function populateHairstyleOptions() {
+            const select = document.getElementById('hairstyle');
+            avatarConfig.hairstyles.forEach((style, index) => {
+                const option = document.createElement('option');
+                option.value = style;
+                option.textContent = `Hairstyle ${index + 1}`;
+                select.appendChild(option);
+            });
+            select.value = avatarConfig.hairstyles[0];
+        }
+
+        function resetAvatar() {
+            avatarConfig.hairColor = '#8B4513';
+            avatarConfig.skinTone = '#F4A460';
+            avatarConfig.bodyTone = '#E8B4A8';
+            document.getElementById('hairColor').value = avatarConfig.hairColor;
+            document.getElementById('skinTone').value = avatarConfig.skinTone;
+            document.getElementById('bodyTone').value = avatarConfig.bodyTone;
+            updateColors();
+        }
+
+        function exportImage() {
+            renderer.render(scene, camera);
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `avatar-${Date.now()}.png`;
+            link.click();
+        }
+
+        // Event Listeners
+        const hairScaleSlider = document.getElementById('hairScale');
+        const hairHeightSlider = document.getElementById('hairHeight');
+
+        hairScaleSlider.addEventListener('input', (e) => {
+            if (avatarParts.hairstyle) {
+                const scale = parseFloat(e.target.value);
+                avatarParts.hairstyle.scale.set(scale, scale, scale);
+            }
+        });
+
+        hairHeightSlider.addEventListener('input', (e) => {
+            if (avatarParts.hairstyle) {
+                const y = parseFloat(e.target.value);
+                avatarParts.hairstyle.position.y = y;
+            }
+        });
+        document.getElementById('hairstyle').addEventListener('change', (e) => {
+            updateHairstyle(e.target.value);
+        });
+
+        document.getElementById('hairColor').addEventListener('input', (e) => {
+            avatarConfig.hairColor = e.target.value;
+            updateColors();
+        });
+
+        document.getElementById('skinTone').addEventListener('input', (e) => {
+            avatarConfig.skinTone = e.target.value;
+            updateColors();
+        });
+
+        document.getElementById('bodyTone').addEventListener('input', (e) => {
+            avatarConfig.bodyTone = e.target.value;
+            updateColors();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', resetAvatar);
+        document.getElementById('exportBtn').addEventListener('click', exportImage);
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (avatarGroup) {
+                avatarGroup.rotation.x += (rotation.x - avatarGroup.rotation.x) * 0.1;
+                avatarGroup.rotation.y += (rotation.y - avatarGroup.rotation.y) * 0.1;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+
+        // Initialize
+        initializeAvatar();
+        animate();
+    </script>
+</body>
+</html>
