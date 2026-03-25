@@ -36,3 +36,4 @@ A loading overlay displays while the avatar is being prepared.
 
 
 ![Avatar Customizer Screenshot](avatar.png)
+![Avatar Customizer Screenshot](Webpage.png)
